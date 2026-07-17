@@ -1,42 +1,1501 @@
-#root {
-  max-width: 1280px;
+/* ── Layout ── */
+.main-content {
+  margin-left: 64px; /* mini sidebar width by default */
+  min-height: 100vh;
+  transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Full sidebar open on desktop */
+@media (min-width: 768px) {
+  .main-content.sidebar-is-open {
+    margin-left: 240px;
+  }
+}
+
+/* Mobile: no sidebar, add bottom padding for bottom nav */
+@media (max-width: 767px) {
+  .main-content {
+    margin-left: 0 !important;
+    padding-bottom: 72px;
+  }
+}
+
+.page {
+  max-width: 1100px;
   margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+  padding: 32px 28px 64px;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+
+
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 28px;
+  gap: 16px;
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
+.page-title {
+  font-size: 28px;
+  font-weight: 800;
+  background: linear-gradient(135deg, #f1f5f9, #94a3b8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 4px;
+}
+
+.page-sub {
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+/* ── Loading ── */
+.loading-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  gap: 16px;
+  color: var(--text-secondary);
+}
+
+.loading-icon {
+  font-size: 48px;
+  animation: pulse 1.5s infinite;
+}
+
+/* ── Dashboard Total Assets ── */
+.total-assets-card {
+  padding: 24px 28px;
+  border-radius: var(--radius-xl);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 32px;
+}
+
+.total-assets-main {
+  flex-shrink: 0;
+  min-width: 260px;
+  border-right: 1px solid var(--border);
+  padding-right: 32px;
+}
+
+.total-assets-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-primary);
+  opacity: 0.8;
+  margin-bottom: 6px;
+}
+
+.total-assets-value {
+  display: block;
+  font-size: 32px;
+  font-weight: 900;
+  background: linear-gradient(135deg, #f1f5f9, var(--accent-light));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 10px;
+  letter-spacing: -1px;
+}
+
+.total-assets-breakdown {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.breakdown-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.total-assets-sub-cards {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.sub-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border-radius: var(--radius-md);
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border);
+}
+
+.sub-card-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.sub-card > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sub-card-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-primary);
+  opacity: 0.8;
+}
+
+.sub-card-value {
+  font-size: 15px;
+  font-weight: 800;
+}
+
+/* Month summary row */
+.month-summary-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.month-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 18px;
+  border-radius: var(--radius-lg);
+  transition: var(--transition);
+}
+
+.month-card > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.month-card:hover {
+  transform: translateY(-1px);
+}
+
+/* ── Summary Cards (legacy, kept for compatibility) ── */
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.summary-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  border-radius: var(--radius-lg);
+  transition: var(--transition);
+}
+
+.summary-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
+}
+
+.summary-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+}
+
+.summary-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.summary-label {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.summary-value {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+
+.summary-sublabel {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 1px;
+}
+
+/* ── Charts ── */
+.charts-grid {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.chart-card {
+  padding: 20px;
+  border-radius: var(--radius-lg);
+}
+
+.chart-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 16px;
+}
+
+.recent-card {
+  padding: 20px;
+  border-radius: var(--radius-lg);
+}
+
+/* Pie legend */
+.pie-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.legend-name {
+  color: var(--text-secondary);
+  flex: 1;
+}
+
+.legend-value {
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 12px;
+}
+
+/* ── Transactions ── */
+.tx-page-grid {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+/* ── Transaction form wrapper (mobile toggle) ── */
+.transaction-form-wrapper {
+  position: sticky;
+  top: 84px;
+}
+
+/* Mobile toggle button — hidden on desktop */
+.form-mobile-toggle {
+  display: none;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 14px 20px;
+  background: linear-gradient(135deg, var(--accent), #4f46e5);
+  border: none;
+  border-radius: var(--radius-lg);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  transition: var(--transition);
+  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.35);
+  margin-bottom: 2px;
+}
+
+.form-mobile-toggle:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 24px rgba(99, 102, 241, 0.5);
+}
+
+.transaction-form {
+  padding: 20px;
+  border-radius: var(--radius-lg);
+  position: sticky;
+  top: 84px;
+}
+
+.form-title {
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+.type-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 16px;
+  background: rgba(255,255,255,0.03);
+  padding: 4px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+}
+
+.type-btn {
+  padding: 8px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.type-btn.active-expense {
+  background: var(--expense-bg);
+  color: var(--expense);
+  border: 1px solid var(--expense-border);
+}
+
+.type-btn.active-income {
+  background: var(--income-bg);
+  color: var(--income);
+  border: 1px solid var(--income-border);
+}
+
+.form-group {
+  margin-bottom: 14px;
+}
+
+.form-error {
+  color: var(--expense);
+  font-size: 13px;
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  background: var(--expense-bg);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--expense-border);
+}
+
+/* ── Transaction List ── */
+.transaction-list {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+}
+
+.list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  gap: 12px;
+}
+
+.list-header h3 {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.list-filters {
+  display: flex;
+  gap: 8px;
+}
+
+.tx-items {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tx-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border-radius: var(--radius-md);
+  background: rgba(255,255,255,0.03);
+  border: 1px solid transparent;
+  transition: var(--transition);
+}
+
+.tx-item:hover {
+  background: rgba(255,255,255,0.06);
+  border-color: var(--border);
+}
+
+.tx-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.tx-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.tx-desc {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tx-meta {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.tx-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.tx-amount {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.tx-amount.income { color: var(--income); }
+.tx-amount.expense { color: var(--expense); }
+
+/* ── Budget ── */
+.budget-manager {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.budget-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.budget-header h2 {
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.budget-month {
+  font-size: 14px;
+  color: var(--text-muted);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  padding: 6px 14px;
+  border-radius: 99px;
+}
+
+.budget-form {
+  padding: 20px;
+  border-radius: var(--radius-lg);
+}
+
+.budget-form h3 {
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+.budget-form-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+}
+
+.budget-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.budget-item {
+  padding: 16px 20px;
+  border-radius: var(--radius-lg);
+}
+
+.budget-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.budget-cat {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.budget-cat-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+}
+
+.budget-cat-name {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.budget-amounts {
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+}
+
+.budget-progress-bar {
+  height: 8px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 99px;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+
+.budget-progress-fill {
+  height: 100%;
+  border-radius: 99px;
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.budget-pct {
+  font-size: 12px;
+}
+
+/* ── Empty state ── */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 40px;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.empty-state span {
+  font-size: 36px;
+  opacity: 0.5;
+}
+
+/* ── Investments ── */
+.invest-tabs {
+  display: flex;
+  gap: 4px;
+  background: rgba(255,255,255,0.03);
+  padding: 4px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  width: fit-content;
+  margin-bottom: 20px;
+}
+
+.invest-tab {
+  padding: 8px 20px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 14px;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.invest-tab.active {
+  background: var(--accent-bg);
+  color: var(--accent-light);
+  border: 1px solid rgba(99,102,241,0.3);
+}
+
+.invest-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  gap: 12px;
+}
+
+.invest-section-header h3 {
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.update-time {
+  font-size: 11px;
+  color: var(--text-muted);
+  display: block;
+  margin-top: 2px;
+}
+
+.alert-warning {
+  background: var(--expense-bg);
+  border: 1px solid var(--expense-border);
+  color: var(--expense);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+
+.alert-info {
+  background: var(--accent-bg);
+  border: 1px solid rgba(99,102,241,0.25);
+  color: var(--accent-light);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+
+/* Portfolio summary bar */
+.portfolio-summary {
+  display: flex;
+  gap: 0;
+  border-radius: var(--radius-lg);
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+
+.portfolio-summary-item {
+  flex: 1;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-right: 1px solid var(--border);
+}
+
+.portfolio-summary-item:last-child {
+  border-right: none;
+}
+
+/* Stock form */
+.stock-form {
+  padding: 20px;
+  border-radius: var(--radius-lg);
+  margin-bottom: 16px;
+}
+
+.stock-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+/* Stock table */
+.stock-table-wrap {
+  overflow-x: auto;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+}
+
+.stock-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.stock-table th {
+  padding: 12px 16px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  background: rgba(255,255,255,0.02);
+  border-bottom: 1px solid var(--border);
+}
+
+.stock-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  color: var(--text-primary);
+  vertical-align: middle;
+}
+
+.stock-table tr:last-child td {
+  border-bottom: none;
+}
+
+.stock-table tr:hover td {
+  background: rgba(255,255,255,0.02);
+}
+
+.stock-ticker-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.stock-ticker {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--accent-light);
+}
+
+.stock-name {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.price-pending {
+  color: var(--text-muted);
+  font-style: italic;
+  font-size: 12px;
+}
+
+/* Cash investment cards */
+.cash-invest-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+}
+
+.cash-invest-card {
+  padding: 20px;
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.cash-invest-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.cash-invest-type {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.cash-invest-name {
+  font-size: 16px;
+  font-weight: 800;
+  margin-bottom: 14px;
+  color: var(--text-primary);
+}
+
+.cash-invest-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.cash-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  background: rgba(255,255,255,0.03);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+
+.cash-stat-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.cash-stat-value {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.coupon-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--accent-bg);
+  border: 1px solid rgba(99,102,241,0.25);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  color: var(--accent-light);
+  margin-bottom: 8px;
+}
+
+.coupon-badge.urgent {
+  background: var(--warning-bg);
+  border-color: rgba(245,158,11,0.3);
+  color: var(--warning);
+}
+
+.coupon-days {
+  margin-left: auto;
+  font-weight: 700;
+}
+
+/* ── TradingView Watchlist Cards ── */
+.tv-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.custom-ticker-card {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: var(--transition);
+  position: relative;
+}
+
+.custom-ticker-card:hover {
+  border-color: var(--border-hover);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
+}
+
+.tv-remove-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 10;
+  background: rgba(0,0,0,0.55);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: var(--text-muted);
+  font-size: 16px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  transition: var(--transition);
+  font-family: 'Inter', sans-serif;
+  padding: 0;
+}
+
+.tv-remove-btn:hover {
+  background: var(--expense);
+  color: #fff;
+  border-color: var(--expense);
+}
+
+/* ── Portfolio Ticker Chips ── */
+.porto-ticker-chip {
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 800;
+  border: 1px solid transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  letter-spacing: 0.02em;
+}
+
+.tv-widget-frame {
+  width: 100%;
+  height: 120px;
+  display: block;
+  border: none;
+}
+
+.price-input-btn {
+  background: rgba(255,255,255,0.04);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: var(--transition);
+  font-family: 'Inter', sans-serif;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.price-input-btn:hover {
+  background: var(--accent-bg);
+  border-color: var(--accent-light);
+  color: var(--accent-light);
+}
+
+/* ── Stock Watchlist ── */
+.stock-watchlist {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+
+.watchlist-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.watchlist-header h3 {
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.watchlist-add-form {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 14px 16px;
+  border-radius: var(--radius-lg);
+}
+
+.stock-bubbles-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.stock-bubble {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: var(--transition);
+  cursor: default;
+}
+
+.stock-bubble:hover {
+  background: var(--bg-card-hover);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
+}
+
+.stock-bubble-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.stock-bubble-badge {
+  font-size: 13px;
+  font-weight: 800;
+  padding: 3px 10px;
+  border-radius: 99px;
+  letter-spacing: 0.03em;
+}
+
+.bubble-remove-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 18px;
+  cursor: pointer;
+  padding: 0 2px;
+  line-height: 1;
+  transition: var(--transition);
+  font-family: 'Inter', sans-serif;
+}
+
+.bubble-remove-btn:hover {
+  color: var(--expense);
+}
+
+.bubble-price {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.5px;
+}
+
+.bubble-change {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.bubble-name {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bubble-date {
+  font-size: 10px;
+  color: var(--text-muted);
+  opacity: 0.6;
+}
+
+.bubble-pending {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 0;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.bubble-loading {
+  padding: 8px 0;
+}
+
+/* ── Reports Filter Bar ── */
+.reports-filter-bar {
+  display: flex;
+  gap: 24px;
+}
+
+/* ── Reports Pie Legend ── */
+.reports-pie-legend {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* ── Debts Page Layout ── */
+.debts-summary-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.debts-filter-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.debts-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.debts-item {
+  margin-bottom: 0;
+}
+
+.debts-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+/* ════════════════════════════════════════
+   RESPONSIVE — TABLET (≤900px)
+   ════════════════════════════════════════ */
+@media (max-width: 900px) {
+  .total-assets-card {
+    flex-direction: column;
+    align-items: stretch;
   }
-  to {
-    transform: rotate(360deg);
+  .total-assets-main {
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    padding-right: 0;
+    padding-bottom: 16px;
+    min-width: unset;
+  }
+  .total-assets-sub-cards {
+    grid-template-columns: 1fr 1fr;
+  }
+  .charts-grid {
+    grid-template-columns: 1fr;
+  }
+  .tx-page-grid {
+    grid-template-columns: 1fr;
+  }
+  .transaction-form {
+    position: static;
+  }
+  .stock-form-grid {
+    grid-template-columns: 1fr;
   }
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
+/* ════════════════════════════════════════
+   RESPONSIVE — MOBILE (≤767px)
+   ════════════════════════════════════════ */
+@media (max-width: 767px) {
+
+  /* ── Global page ── */
+  .page {
+    padding: 16px 14px 24px;
+  }
+
+  .page-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .page-title {
+    font-size: 22px;
+  }
+
+  /* ── Dashboard: Total Assets Card ── */
+  .total-assets-card {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+    padding: 16px;
+  }
+
+  .total-assets-main {
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    padding-right: 0;
+    padding-bottom: 16px;
+    min-width: unset;
+  }
+
+  .total-assets-value {
+    font-size: 26px;
+  }
+
+  .total-assets-sub-cards {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .month-summary-row {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  /* ── Dashboard: Charts ── */
+  .charts-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* ── Transactions ── */
+  .tx-page-grid {
+    grid-template-columns: 1fr;
+    gap: 0;          /* no gap; list and form handle their own spacing */
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Form/Toggle at top, list below */
+  .tx-form-col { margin-bottom: 12px; }
+  .tx-list-col { }
+
+  /* Mobile toggle button — show */
+  .form-mobile-toggle {
+    display: flex;
+  }
+
+  /* Form collapses on mobile by default */
+  .form-collapsible {
+    display: none;
+  }
+  .form-collapsible.form-expanded {
+    display: block;
+  }
+
+  .transaction-form {
+    position: static;
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+    border-top: none;
+    padding: 16px;
+  }
+
+  /* ── Transaksi: list header ── */
+  .list-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 14px 16px;
+    margin-bottom: 0;
+  }
+
+  .list-filters {
+    width: 100%;
+    display: flex;
+    gap: 8px;
+  }
+
+  .list-filters input,
+  .list-filters select {
+    flex: 1;
+    min-width: 0;
+    font-size: 13px;
+    padding: 8px 10px;
+  }
+
+  .transaction-list {
+    padding: 0;
+    border-radius: var(--radius-lg);
+  }
+
+  .tx-items {
+    padding: 0 12px 12px;
+  }
+
+  /* Compact tx-item to prevent horizontal overflow */
+  .tx-item {
+    padding: 10px;
+    gap: 8px;
+  }
+
+  .tx-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+  }
+
+  .tx-desc {
+    font-size: 13px;
+  }
+
+  .tx-meta {
+    font-size: 11px;
+  }
+
+  .tx-amount {
+    font-size: 13px;
+  }
+
+  /* Reduce tx action buttons on mobile */
+  .tx-right > div {
+    display: flex;
+    gap: 4px;
+  }
+
+  .tx-right > div .btn {
+    padding: 4px;
+    font-size: 11px;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* ── Investasi: section headers ── */
+  .invest-section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .invest-section-header > div:last-child {
+    display: flex;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .invest-section-header > div:last-child .btn {
+    flex: 1;
+    justify-content: center;
+  }
+
+  /* ── Watchlist header ── */
+  .watchlist-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .watchlist-header > div:last-child {
+    display: flex;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .watchlist-header > div:last-child .btn {
+    flex: 1;
+    justify-content: center;
+  }
+
+  /* Watchlist add form - stack */
+  .watchlist-add-form {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  /* TV cards — 2 per row on mobile */
+  .tv-cards-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .custom-ticker-card {
+    padding: 14px;
+  }
+
+  /* ── Reports: pie legend ── */
+  .reports-pie-legend {
+    grid-template-columns: 1fr;
+  }
+
+  /* ── Reports: filter bar ── */
+  .reports-filter-bar {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  /* ── Reports: summary cards (3-col → 1-col) ── */
+  .summary-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  /* ── Budget ── */
+  .budget-form-row {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .budget-form-row .btn {
+    width: 100%;
+    justify-content: center;
+    margin-top: 0 !important;
+  }
+
+  .budget-item-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .budget-amounts {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  /* ── Investments ── */
+  .stock-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .cash-invest-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .portfolio-summary {
+    flex-direction: column;
+  }
+
+  .portfolio-summary-item {
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .portfolio-summary-item:last-child {
+    border-bottom: none;
+  }
+
+  .invest-tabs {
+    width: 100%;
+  }
+
+  .invest-tab {
+    flex: 1;
+    text-align: center;
+  }
+
+  /* Stock table — allow horizontal scroll */
+  .stock-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* ── Debts ── */
+  .debts-summary-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .debts-item-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 8px !important;
+  }
+
+  /* ── Reports filter bar ── */
+  .reports-filter-bar {
+    flex-direction: column !important;
+    gap: 12px !important;
   }
 }
 
-.card {
-  padding: 2em;
-}
-
-.read-the-docs {
-  color: #888;
-}
