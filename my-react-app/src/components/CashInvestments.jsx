@@ -58,6 +58,7 @@ function calcAccumulatedInterest(principal, returnPct, startDate) {
 
 export default function CashInvestments({ investments, onRefresh, user }) {
   const [showForm, setShowForm] = useState(false)
+  const [editId, setEditId] = useState(null)
   const [form, setForm] = useState({
     name: '', type: 'rdpu', principal: '', return_pct: '',
     coupon_day: '', coupon_frequency: 'monthly', start_date: new Date().toISOString().split('T')[0], end_date: '', notes: ''
@@ -68,11 +69,12 @@ export default function CashInvestments({ investments, onRefresh, user }) {
   const totalPrincipal = investments.reduce((s, i) => s + Number(i.principal), 0)
   const totalMonthlyReturn = investments.reduce((s, i) => s + calcMonthlyInterest(Number(i.principal), Number(i.return_pct)), 0)
 
-  const handleAdd = async (e) => {
+  const handleSave = async (e) => {
     e.preventDefault()
     if (!form.name || !form.principal || !form.return_pct) { setFormError('Nama, principal, dan return wajib diisi'); return }
     setSaving(true)
-    const { error } = await supabase.from('cash_investments').insert({
+    
+    const payload = {
       name: form.name,
       type: form.type,
       principal: parseNum(form.principal),
@@ -83,12 +85,39 @@ export default function CashInvestments({ investments, onRefresh, user }) {
       end_date: form.end_date || null,
       notes: form.notes || null,
       user_id: user?.id,
-    })
+    }
+
+    let error;
+    if (editId) {
+      const res = await supabase.from('cash_investments').update(payload).eq('id', editId)
+      error = res.error
+    } else {
+      const res = await supabase.from('cash_investments').insert(payload)
+      error = res.error
+    }
+
     setSaving(false)
     if (error) { setFormError(error.message); return }
     setForm({ name: '', type: 'rdpu', principal: '', return_pct: '', coupon_day: '', coupon_frequency: 'monthly', start_date: new Date().toISOString().split('T')[0], end_date: '', notes: '' })
     setShowForm(false)
+    setEditId(null)
     onRefresh?.()
+  }
+
+  const handleEdit = (item) => {
+    setForm({
+      name: item.name,
+      type: item.type,
+      principal: fmtNumber(item.principal.toString()),
+      return_pct: item.return_pct.toString(),
+      coupon_day: item.coupon_day ? item.coupon_day.toString() : '',
+      coupon_frequency: item.coupon_frequency || 'monthly',
+      start_date: item.start_date || new Date().toISOString().split('T')[0],
+      end_date: item.end_date || '',
+      notes: item.notes || ''
+    })
+    setEditId(item.id)
+    setShowForm(true)
   }
 
   const handleDelete = async (id) => {
@@ -104,10 +133,18 @@ export default function CashInvestments({ investments, onRefresh, user }) {
           <h3>Investasi Cash</h3>
           <span className="update-time">RDPU · Deposito · Bank Digital · Obligasi</span>
         </div>
-        <button className="btn btn-primary" onClick={() => setShowForm(v => !v)}>
-          {showForm ? '✕ Batal' : '+ Tambah'}
-        </button>
-      </div>
+          <button className="btn btn-primary" onClick={() => {
+            if (showForm) {
+              setShowForm(false)
+              setEditId(null)
+              setForm({ name: '', type: 'rdpu', principal: '', return_pct: '', coupon_day: '', coupon_frequency: 'monthly', start_date: new Date().toISOString().split('T')[0], end_date: '', notes: '' })
+            } else {
+              setShowForm(true)
+            }
+          }}>
+            {showForm ? '✕ Batal' : '+ Tambah'}
+          </button>
+        </div>
 
       {/* Summary */}
       {investments.length > 0 && (
@@ -127,9 +164,9 @@ export default function CashInvestments({ investments, onRefresh, user }) {
         </div>
       )}
 
-      {/* Add form */}
+      {/* Add/Edit form */}
       {showForm && (
-        <form className="stock-form glass" onSubmit={handleAdd}>
+        <form className="invest-form glass animate-fade-up" onSubmit={handleSave}>
           <div className="stock-form-grid">
             <div className="form-group">
               <label>Nama Produk</label>
@@ -198,7 +235,11 @@ export default function CashInvestments({ investments, onRefresh, user }) {
             <input type="text" placeholder="Catatan tambahan..." value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} />
           </div>
           {formError && <p className="form-error">{formError}</p>}
-          <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? 'Menyimpan...' : '+ Simpan'}</button>
+          <div className="form-actions">
+            <button type="submit" className="btn btn-primary" disabled={saving}>
+              {saving ? 'Menyimpan...' : (editId ? 'Simpan Perubahan' : 'Tambah Investasi')}
+            </button>
+          </div>
         </form>
       )}
 
@@ -225,7 +266,10 @@ export default function CashInvestments({ investments, onRefresh, user }) {
                   <div className="cash-invest-type" style={{ background: typeInfo.color + '20', color: typeInfo.color }}>
                     {typeInfo.icon} {typeInfo.label}
                   </div>
-                  <button className="btn btn-danger" style={{ padding: '3px 8px', fontSize: 11 }} onClick={() => handleDelete(inv.id)}>🗑️</button>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <button className="btn btn-ghost" style={{ padding: '3px 8px', fontSize: 12 }} onClick={() => handleEdit(inv)}>✏️</button>
+                    <button className="btn btn-danger" style={{ padding: '3px 8px', fontSize: 11 }} onClick={() => handleDelete(inv.id)}>🗑️</button>
+                  </div>
                 </div>
 
                 <h4 className="cash-invest-name">{inv.name}</h4>

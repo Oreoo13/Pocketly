@@ -21,6 +21,7 @@ export default function StockPortfolio({ holdings, onRefresh, user }) {
   const [editingTicker, setEditingTicker] = useState(null)
   const [priceInput, setPriceInput] = useState('')
   const [showForm, setShowForm] = useState(false)
+  const [editId, setEditId] = useState(null)
   const [form, setForm] = useState({ ticker: '', name: '', lots: '', avg_price: '' })
   const [saving, setSaving] = useState(false)
   const [formError, setFormError] = useState('')
@@ -42,22 +43,45 @@ export default function StockPortfolio({ holdings, onRefresh, user }) {
     setPriceInput('')
   }
 
-  const handleAdd = async (e) => {
+  const handleSave = async (e) => {
     e.preventDefault()
-    if (!form.ticker || !form.lots || !form.avg_price) { setFormError('Semua field wajib diisi'); return }
+    if (!form.ticker || !form.lots || !form.avg_price) { setFormError('Ticker, Lots, & Avg Price wajib diisi'); return }
     setSaving(true)
-    const { error } = await supabase.from('stock_holdings').insert({
+    
+    const payload = {
       ticker: form.ticker.toUpperCase(),
       name: form.name || form.ticker.toUpperCase(),
       lots: parseInt(form.lots),
       avg_price: parseNum(form.avg_price),
       user_id: user?.id,
-    })
+    }
+
+    let error;
+    if (editId) {
+      const res = await supabase.from('stock_holdings').update(payload).eq('id', editId)
+      error = res.error
+    } else {
+      const res = await supabase.from('stock_holdings').insert(payload)
+      error = res.error
+    }
+
     setSaving(false)
     if (error) { setFormError(error.message); return }
     setForm({ ticker: '', name: '', lots: '', avg_price: '' })
     setShowForm(false)
+    setEditId(null)
     onRefresh?.()
+  }
+
+  const handleEdit = (item) => {
+    setForm({
+      ticker: item.ticker,
+      name: item.name,
+      lots: item.lots.toString(),
+      avg_price: fmtNum(item.avg_price.toString())
+    })
+    setEditId(item.id)
+    setShowForm(true)
   }
 
   const handleDelete = async (id) => {
@@ -92,15 +116,23 @@ export default function StockPortfolio({ holdings, onRefresh, user }) {
           <button className="btn btn-ghost" onClick={() => fetchPrices(tickers, true)} disabled={autoLoading || tickers.length === 0}>
             {autoLoading ? '⏳' : '🔄'} Refresh Live
           </button>
-          <button className="btn btn-primary" onClick={() => setShowForm(v => !v)}>
+          <button className="btn btn-primary" onClick={() => {
+            if (showForm) {
+              setShowForm(false)
+              setEditId(null)
+              setForm({ ticker: '', name: '', lots: '', avg_price: '' })
+            } else {
+              setShowForm(true)
+            }
+          }}>
             {showForm ? '✕ Batal' : '+ Tambah Saham'}
           </button>
         </div>
       </div>
 
-      {/* Add form */}
+      {/* Form Tambah/Edit */}
       {showForm && (
-        <form className="stock-form glass" onSubmit={handleAdd}>
+        <form className="stock-form glass animate-fade-up" onSubmit={handleSave}>
           <div className="stock-form-grid">
             <div className="form-group">
               <label>Ticker IDX</label>
@@ -125,7 +157,7 @@ export default function StockPortfolio({ holdings, onRefresh, user }) {
           </div>
           {formError && <p className="form-error">{formError}</p>}
           <button type="submit" className="btn btn-primary" disabled={saving}>
-            {saving ? 'Menyimpan...' : '+ Simpan'}
+            {saving ? 'Menyimpan...' : (editId ? 'Simpan Perubahan' : '+ Simpan')}
           </button>
         </form>
       )}
@@ -251,7 +283,10 @@ export default function StockPortfolio({ holdings, onRefresh, user }) {
                       </td>
 
                       <td>
-                        <button className="btn btn-danger" style={{ padding: '4px 8px', fontSize: 12 }} onClick={() => handleDelete(h.id)}>🗑️</button>
+                        <div style={{ display: 'flex', gap: 6 }}>
+                          <button className="btn btn-ghost" style={{ padding: '3px 8px', fontSize: 12 }} onClick={() => handleEdit(h)}>✏️</button>
+                          <button className="btn btn-danger" style={{ padding: '3px 8px', fontSize: 11 }} onClick={() => handleDelete(h.id)}>🗑️</button>
+                        </div>
                       </td>
                     </tr>
                   )
