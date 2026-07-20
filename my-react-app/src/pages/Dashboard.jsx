@@ -1,12 +1,16 @@
+import { useState } from 'react'
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell,
 } from 'recharts'
+import CategoryTransactionModal from '../components/CategoryTransactionModal'
 
 const fmt = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 })
 const COLORS = ['#6366f1', '#f43f5e', '#22c55e', '#f59e0b', '#06b6d4', '#a855f7', '#ec4899', '#3b82f6']
 
 export default function Dashboard({ transactions, categories, cashInvestments, accounts = [], budgets = [], debts = [] }) {
+  const [selectedCategory, setSelectedCategory] = useState(null)
+  const [modalTx, setModalTx] = useState([])
   const now = new Date()
 
   // Helper untuk mengecek apakah sebuah kategori adalah investasi
@@ -111,6 +115,22 @@ export default function Dashboard({ transactions, categories, cashInvestments, a
     const pct = Math.max(0, Math.min((spent / b.monthly_limit) * 100, 100))
     return { ...b, cat: targetCat, spent, pct }
   }).sort((a,b) => b.pct - a.pct)
+
+  const handleCategoryClick = (categoryName) => {
+    const cat = categories.find(c => c.name === categoryName)
+    if (!cat) return
+
+    const tx = thisMonth.filter(t => {
+      const tCat = categories.find(c => c.id === t.category_id)
+      if (!tCat) return false
+      const tName = tCat.name.toLowerCase()
+      const targetName = cat.name.toLowerCase()
+      return tName === targetName || (tName.includes('investasi') && targetName.includes('investasi'))
+    })
+    
+    setModalTx(tx)
+    setSelectedCategory(cat)
+  }
 
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload?.length) return (
@@ -332,7 +352,14 @@ export default function Dashboard({ transactions, categories, cashInvestments, a
               </ResponsiveContainer>
               <div className="pie-legend">
                 {pieData.slice(0, 4).map((d, i) => (
-                  <div key={i} className="legend-item">
+                  <div 
+                    key={i} 
+                    className="legend-item" 
+                    onClick={() => handleCategoryClick(d.name)}
+                    style={{ cursor: 'pointer', transition: 'transform 0.2s', padding: '4px', borderRadius: '6px' }}
+                    onMouseOver={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                    onMouseOut={e => e.currentTarget.style.background = 'transparent'}
+                  >
                     <span className="legend-dot" style={{ background: COLORS[i % COLORS.length] }} />
                     <span className="legend-name">{d.icon} {d.name}</span>
                     <span className="legend-value">{fmt.format(d.value)}</span>
@@ -377,7 +404,14 @@ export default function Dashboard({ transactions, categories, cashInvestments, a
           ) : (
             <div className="budget-progress-list" style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 16 }}>
               {budgetProgress.slice(0, 5).map(bp => (
-                <div key={bp.id} className="budget-progress-item">
+                <div 
+                  key={bp.id} 
+                  className="budget-progress-item"
+                  onClick={() => bp.cat && handleCategoryClick(bp.cat.name)}
+                  style={{ cursor: 'pointer', transition: 'transform 0.2s', padding: '6px', borderRadius: '8px' }}
+                  onMouseOver={e => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
+                  onMouseOut={e => e.currentTarget.style.background = 'transparent'}
+                >
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 6 }}>
                     <span>{bp.cat?.icon} {bp.cat?.name}</span>
                     <span style={{ color: bp.pct >= 100 ? 'var(--expense)' : 'var(--text-primary)' }}>
@@ -393,6 +427,14 @@ export default function Dashboard({ transactions, categories, cashInvestments, a
           )}
         </div>
       </div>
+      
+      <CategoryTransactionModal
+        isOpen={!!selectedCategory}
+        onClose={() => setSelectedCategory(null)}
+        category={selectedCategory}
+        transactions={modalTx}
+        accounts={accounts}
+      />
     </div>
   )
 }

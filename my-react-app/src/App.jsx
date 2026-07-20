@@ -124,9 +124,7 @@ function AppInner() {
               user={user}
             />
           } />
-          <Route path="/budget" element={
-            <Budget categories={categories} transactions={transactions} user={user} />
-          } />
+          <Route path="/budget" element={<Budget categories={categories} transactions={transactions} accounts={accounts} user={user} />} />
           <Route path="/analytics" element={
             <Analytics 
               transactions={transactions} 
