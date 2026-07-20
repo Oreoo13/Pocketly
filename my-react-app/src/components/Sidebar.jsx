@@ -5,10 +5,10 @@ import './Sidebar.css'
 const navItems = [
   { to: '/', label: 'Dashboard', icon: '📊', end: true },
   { to: '/transactions', label: 'Transaksi', icon: '💳' },
-  { to: '/investments', label: 'Investasi', icon: '📈' },
   { to: '/budget', label: 'Budget', icon: '🎯' },
-  { to: '/reports', label: 'Laporan', icon: '📉' },
+  { to: '/analytics', label: 'Analitik', icon: '🔍' },
   { to: '/debts', label: 'Hutang', icon: '🤝' },
+  { to: '/settings', label: 'Pengaturan', icon: '⚙️' },
 ]
 
 export default function Sidebar({ isOpen, onToggle, user }) {

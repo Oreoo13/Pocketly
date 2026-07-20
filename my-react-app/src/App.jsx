@@ -5,10 +5,10 @@ import { AuthProvider, useAuth } from './context/AuthContext'
 import Sidebar from './components/Sidebar'
 import Dashboard from './pages/Dashboard'
 import Transactions from './pages/Transactions'
-import Investments from './pages/Investments'
 import Budget from './pages/Budget'
-import Reports from './pages/Reports'
+import Analytics from './pages/Analytics'
 import Debts from './pages/Debts'
+import Settings from './pages/Settings'
 import LoginPage from './pages/LoginPage'
 import './App.css'
 
@@ -124,22 +124,29 @@ function AppInner() {
               user={user}
             />
           } />
-          <Route path="/investments" element={
-            <Investments
-              stockHoldings={stockHoldings}
-              cashInvestments={cashInvestments}
-              onRefresh={fetchAll}
-              user={user}
-            />
-          } />
           <Route path="/budget" element={
             <Budget categories={categories} transactions={transactions} user={user} />
           } />
-          <Route path="/reports" element={
-            <Reports categories={categories} transactions={transactions} />
+          <Route path="/analytics" element={
+            <Analytics 
+              transactions={transactions} 
+              categories={categories} 
+              stockHoldings={stockHoldings} 
+              cashInvestments={cashInvestments} 
+              onRefresh={fetchAll} 
+              user={user} 
+            />
           } />
           <Route path="/debts" element={
             <Debts debts={debts} onRefresh={fetchAll} user={user} />
+          } />
+          <Route path="/settings" element={
+            <Settings 
+              categories={categories} 
+              accounts={accounts} 
+              onRefresh={fetchAll} 
+              user={user} 
+            />
           } />
         </Routes>
       </main>
