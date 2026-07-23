@@ -66,6 +66,11 @@ export default function CashInvestments({ investments, onRefresh, user }) {
   const [saving, setSaving] = useState(false)
   const [formError, setFormError] = useState('')
 
+  // Quick-edit principal (inline, number-only)
+  const [quickEditId, setQuickEditId] = useState(null)
+  const [quickEditValue, setQuickEditValue] = useState('')
+  const [quickSaving, setQuickSaving] = useState(false)
+
   const totalPrincipal = investments.reduce((s, i) => s + Number(i.principal), 0)
   const totalMonthlyReturn = investments.reduce((s, i) => s + calcMonthlyInterest(Number(i.principal), Number(i.return_pct)), 0)
 
@@ -123,6 +128,22 @@ export default function CashInvestments({ investments, onRefresh, user }) {
   const handleDelete = async (id) => {
     if (!confirm('Hapus investasi ini?')) return
     await supabase.from('cash_investments').delete().eq('id', id)
+    onRefresh?.()
+  }
+
+  const handleQuickEdit = (inv) => {
+    setQuickEditId(inv.id)
+    setQuickEditValue(inv.principal.toString())
+  }
+
+  const handleQuickSave = async (id) => {
+    const val = parseNum(quickEditValue)
+    if (!val || val <= 0) return
+    setQuickSaving(true)
+    await supabase.from('cash_investments').update({ principal: val }).eq('id', id)
+    setQuickSaving(false)
+    setQuickEditId(null)
+    setQuickEditValue('')
     onRefresh?.()
   }
 
@@ -267,12 +288,53 @@ export default function CashInvestments({ investments, onRefresh, user }) {
                     {typeInfo.icon} {typeInfo.label}
                   </div>
                   <div style={{ display: 'flex', gap: 6 }}>
-                    <button className="btn btn-ghost" style={{ padding: '3px 8px', fontSize: 12 }} onClick={() => handleEdit(inv)}>✏️</button>
+                    <button className="btn btn-ghost" style={{ padding: '3px 8px', fontSize: 12 }} onClick={() => handleEdit(inv)} title="Edit lengkap">✏️</button>
+                    <button className="btn btn-ghost" style={{ padding: '3px 8px', fontSize: 12, background: 'rgba(99,102,241,0.15)', color: 'var(--accent)' }} onClick={() => handleQuickEdit(inv)} title="Update nominal">💰</button>
                     <button className="btn btn-danger" style={{ padding: '3px 8px', fontSize: 11 }} onClick={() => handleDelete(inv.id)}>🗑️</button>
                   </div>
                 </div>
 
                 <h4 className="cash-invest-name">{inv.name}</h4>
+
+                {/* Quick-edit principal inline */}
+                {quickEditId === inv.id && (
+                  <div style={{ display: 'flex', gap: 8, marginBottom: 12, alignItems: 'center' }}>
+                    <div style={{ position: 'relative', flex: 1 }}>
+                      <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: 13, pointerEvents: 'none' }}>Rp</span>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        placeholder="Masukkan nominal baru"
+                        value={fmtNumber(quickEditValue)}
+                        onChange={e => setQuickEditValue(e.target.value.replace(/\D/g, ''))}
+                        onKeyDown={e => { if (e.key === 'Enter') handleQuickSave(inv.id); if (e.key === 'Escape') setQuickEditId(null) }}
+                        autoFocus
+                        style={{
+                          paddingLeft: 34, width: '100%', fontSize: 16,
+                          fontWeight: 700, letterSpacing: '0.05em',
+                          background: 'rgba(99,102,241,0.1)',
+                          border: '1.5px solid var(--accent)',
+                          borderRadius: 'var(--radius-md)',
+                          color: 'var(--text-primary)'
+                        }}
+                      />
+                    </div>
+                    <button
+                      className="btn btn-primary"
+                      style={{ padding: '10px 14px', fontSize: 13, whiteSpace: 'nowrap' }}
+                      onClick={() => handleQuickSave(inv.id)}
+                      disabled={quickSaving}
+                    >
+                      {quickSaving ? '...' : '✓ Simpan'}
+                    </button>
+                    <button
+                      className="btn btn-ghost"
+                      style={{ padding: '10px 10px', fontSize: 13 }}
+                      onClick={() => setQuickEditId(null)}
+                    >✕</button>
+                  </div>
+                )}
 
                 <div className="cash-invest-stats">
                   <div className="cash-stat">

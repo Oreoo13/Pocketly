@@ -6,6 +6,11 @@ import CashInvestments from '../components/CashInvestments'
 
 const fmt = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 })
 const COLORS = ['#4f46e5', '#e11d48', '#16a34a', '#d97706', '#06b6d4', '#8b5cf6', '#db2777', '#2563eb']
+const ALLOC_COLORS = [
+  '#6366f1', '#06b6d4', '#f59e0b', '#22c55e', '#a855f7',
+  '#e11d48', '#3b82f6', '#f97316', '#ec4899', '#14b8a6',
+  '#84cc16', '#8b5cf6', '#ef4444', '#0ea5e9', '#d97706',
+]
 
 export default function Analytics({ transactions = [], categories = [], stockHoldings = [], cashInvestments = [], onRefresh, user }) {
   const [mainTab, setMainTab] = useState('reports') // 'reports' | 'investments'
@@ -195,6 +200,123 @@ export default function Analytics({ transactions = [], categories = [], stockHol
       {/* --- INVESTMENTS VIEW --- */}
       {mainTab === 'investments' && (
         <div className="animate-fade-in">
+
+          {/* Portfolio Allocation Pie Chart */}
+          {(() => {
+            // No need to pre-group anymore — we go per-item
+
+            const allocData = [
+              // Individual stocks
+              ...stockHoldings.map(h => ({
+                name: h.ticker,
+                label: h.name || h.ticker,
+                value: h.avg_price * h.lots * 100,
+                icon: '📈',
+                sub: `${h.lots} lot · avg ${fmt.format(h.avg_price)}`
+              })),
+              // Individual cash products by name
+              ...cashInvestments.map(inv => {
+                const icon = inv.type === 'rdpu' ? '🏦'
+                  : inv.type === 'deposito' ? '💎'
+                  : inv.type === 'bank_digital' ? '📱'
+                  : inv.type === 'obligasi' ? '📜' : '💰'
+                const typeLabel = inv.type === 'rdpu' ? 'RDPU'
+                  : inv.type === 'deposito' ? 'Deposito'
+                  : inv.type === 'bank_digital' ? 'Bank Digital'
+                  : inv.type === 'obligasi' ? 'Obligasi' : 'Cash'
+                return {
+                  name: inv.name,
+                  label: inv.name,
+                  value: Number(inv.principal),
+                  icon,
+                  sub: typeLabel
+                }
+              })
+            ].sort((a, b) => b.value - a.value)
+
+            const totalPortfolio = allocData.reduce((s, d) => s + d.value, 0)
+
+            if (totalPortfolio === 0) return null
+
+            const CustomAllocTooltip = ({ active, payload }) => {
+              if (active && payload?.length) {
+                const d = payload[0].payload
+                const i = allocData.findIndex(x => x.name === d.name)
+                const color = ALLOC_COLORS[i] || ALLOC_COLORS[0]
+                const pct = totalPortfolio > 0 ? ((d.value / totalPortfolio) * 100).toFixed(1) : 0
+                return (
+                  <div style={{ background: '#1e2740', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 10, padding: '10px 14px', boxShadow: '0 8px 24px rgba(0,0,0,0.4)' }}>
+                    <div style={{ fontWeight: 700, color: '#f1f5f9', marginBottom: 2, fontSize: 13 }}>{d.icon} {d.name}</div>
+                    {d.sub && <div style={{ color: '#64748b', fontSize: 11, marginBottom: 4 }}>{d.sub}</div>}
+                    <div style={{ color: '#94a3b8', fontSize: 12 }}>{fmt.format(d.value)}</div>
+                    <div style={{ color, fontSize: 13, fontWeight: 700, marginTop: 2 }}>{pct}% dari total</div>
+                  </div>
+                )
+              }
+              return null
+            }
+
+            return (
+              <div className="glass" style={{ padding: 24, borderRadius: 'var(--radius-xl)', marginBottom: 28, display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>🥧 Alokasi Portofolio</h3>
+                    <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--text-muted)' }}>Total: {fmt.format(totalPortfolio)}</p>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: 0, flexWrap: 'wrap' }}>
+                  {/* Pie */}
+                  <div style={{ flex: '0 0 180px', height: 180 }}>
+                    <ResponsiveContainer width="100%" height={180}>
+                      <PieChart>
+                        <Pie
+                          data={allocData}
+                          cx="50%" cy="50%"
+                          innerRadius={50} outerRadius={80}
+                          paddingAngle={3}
+                          dataKey="value"
+                        >
+                          {allocData.map((d, i) => (
+                            <Cell key={i} fill={ALLOC_COLORS[i % ALLOC_COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip content={<CustomAllocTooltip />} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+
+                  {/* Legend */}
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10, minWidth: 0 }}>
+                    {allocData.map((d, i) => {
+                      const color = ALLOC_COLORS[i % ALLOC_COLORS.length]
+                      const pct = ((d.value / totalPortfolio) * 100).toFixed(1)
+                      return (
+                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <div style={{ width: 10, height: 10, borderRadius: '50%', background: color, flexShrink: 0 }} />
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+                              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>{d.icon} {d.name}</span>
+                              {d.sub && <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{d.sub}</span>}
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 3 }}>
+                              {/* Progress bar */}
+                              <div style={{ flex: 1, height: 5, background: 'rgba(255,255,255,0.08)', borderRadius: 99, overflow: 'hidden' }}>
+                                <div style={{ width: `${pct}%`, height: '100%', background: color, borderRadius: 99, transition: 'width 0.6s ease' }} />
+                              </div>
+                              <span style={{ fontSize: 12, fontWeight: 700, color, flexShrink: 0 }}>{pct}%</span>
+                            </div>
+                            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{fmt.format(d.value)}</div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              </div>
+            )
+          })()}
+
           <div className="invest-tabs" style={{ marginBottom: 24 }}>
             <button
               className={`invest-tab ${investTab === 'stock' ? 'active' : ''}`}

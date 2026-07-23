@@ -26,6 +26,12 @@ export default function StockPortfolio({ holdings, onRefresh, user }) {
   const [saving, setSaving] = useState(false)
   const [formError, setFormError] = useState('')
 
+  // Buy More state
+  const [buyMoreId, setBuyMoreId] = useState(null)
+  const [buyMoreLots, setBuyMoreLots] = useState('')
+  const [buyMorePrice, setBuyMorePrice] = useState('')
+  const [buyMoreSaving, setBuyMoreSaving] = useState(false)
+
   const { prices: autoPrices, loading: autoLoading, error: autoError, fetchPrices } = useStockPrices()
   const tickers = holdings.map(h => h.ticker)
 
@@ -87,6 +93,33 @@ export default function StockPortfolio({ holdings, onRefresh, user }) {
   const handleDelete = async (id) => {
     if (!confirm('Hapus saham ini?')) return
     await supabase.from('stock_holdings').delete().eq('id', id)
+    onRefresh?.()
+  }
+
+  const handleBuyMore = async (holding) => {
+    const addLots = parseInt(buyMoreLots)
+    const addPrice = parseNum(buyMorePrice)
+    if (!addLots || addLots <= 0 || !addPrice || addPrice <= 0) return
+
+    setBuyMoreSaving(true)
+    // Weighted average: (old_lots*100*old_avg + add_lots*100*add_price) / total_shares
+    const totalOldShares = holding.lots * 100
+    const totalNewShares = addLots * 100
+    const newAvg = Math.round(
+      (totalOldShares * holding.avg_price + totalNewShares * addPrice) /
+      (totalOldShares + totalNewShares)
+    )
+    const newLots = holding.lots + addLots
+
+    await supabase.from('stock_holdings').update({
+      lots: newLots,
+      avg_price: newAvg,
+    }).eq('id', holding.id)
+
+    setBuyMoreSaving(false)
+    setBuyMoreId(null)
+    setBuyMoreLots('')
+    setBuyMorePrice('')
     onRefresh?.()
   }
 
@@ -284,9 +317,76 @@ export default function StockPortfolio({ holdings, onRefresh, user }) {
 
                       <td>
                         <div style={{ display: 'flex', gap: 6 }}>
-                          <button className="btn btn-ghost" style={{ padding: '3px 8px', fontSize: 12 }} onClick={() => handleEdit(h)}>✏️</button>
+                          <button className="btn btn-ghost" style={{ padding: '3px 8px', fontSize: 12 }} onClick={() => handleEdit(h)} title="Edit lengkap">✏️</button>
+                          <button
+                            className="btn btn-ghost"
+                            style={{ padding: '3px 8px', fontSize: 12, background: 'rgba(34,197,94,0.15)', color: 'var(--income)', border: '1px solid rgba(34,197,94,0.3)' }}
+                            onClick={() => { setBuyMoreId(buyMoreId === h.id ? null : h.id); setBuyMoreLots(''); setBuyMorePrice('') }}
+                            title="Tambah Lot (Beli Lagi)"
+                          >
+                            + Lot
+                          </button>
                           <button className="btn btn-danger" style={{ padding: '3px 8px', fontSize: 11 }} onClick={() => handleDelete(h.id)}>🗑️</button>
                         </div>
+
+                        {/* Buy More inline form */}
+                        {buyMoreId === h.id && (
+                          <div style={{ marginTop: 10, padding: '12px', background: 'rgba(34,197,94,0.07)', border: '1.5px solid rgba(34,197,94,0.3)', borderRadius: 10, minWidth: 220 }}>
+                            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--income)', marginBottom: 8 }}>📈 Tambah Lot {h.ticker}</div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                              <div>
+                                <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 3 }}>Jumlah Lot Beli</label>
+                                <input
+                                  type="text"
+                                  inputMode="numeric"
+                                  pattern="[0-9]*"
+                                  placeholder="1"
+                                  value={buyMoreLots}
+                                  onChange={e => setBuyMoreLots(e.target.value.replace(/\D/g, ''))}
+                                  autoFocus
+                                  style={{ width: '100%', padding: '8px 10px', fontSize: 14, fontWeight: 700, background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text-primary)', boxSizing: 'border-box' }}
+                                />
+                              </div>
+                              <div>
+                                <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 3 }}>Harga Beli (Rp/lembar)</label>
+                                <input
+                                  type="text"
+                                  inputMode="numeric"
+                                  pattern="[0-9]*"
+                                  placeholder="2.950"
+                                  value={fmtNum(buyMorePrice)}
+                                  onChange={e => setBuyMorePrice(e.target.value.replace(/\D/g, ''))}
+                                  onKeyDown={e => { if (e.key === 'Enter') handleBuyMore(h); if (e.key === 'Escape') setBuyMoreId(null) }}
+                                  style={{ width: '100%', padding: '8px 10px', fontSize: 14, fontWeight: 700, background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text-primary)', boxSizing: 'border-box' }}
+                                />
+                              </div>
+                              {/* Preview new avg */}
+                              {buyMoreLots && buyMorePrice && parseInt(buyMoreLots) > 0 && parseNum(buyMorePrice) > 0 && (() => {
+                                const newAvg = Math.round(
+                                  (h.lots * 100 * h.avg_price + parseInt(buyMoreLots) * 100 * parseNum(buyMorePrice)) /
+                                  ((h.lots + parseInt(buyMoreLots)) * 100)
+                                )
+                                return (
+                                  <div style={{ padding: '8px 10px', background: 'rgba(34,197,94,0.1)', borderRadius: 8, fontSize: 12 }}>
+                                    <div style={{ color: 'var(--text-muted)' }}>Total lot: <strong style={{ color: 'var(--text-primary)' }}>{h.lots + parseInt(buyMoreLots)} lot</strong></div>
+                                    <div style={{ color: 'var(--text-muted)' }}>Avg baru: <strong style={{ color: 'var(--income)' }}>Rp {newAvg.toLocaleString('id-ID')}</strong></div>
+                                  </div>
+                                )
+                              })()}
+                              <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
+                                <button
+                                  className="btn btn-primary"
+                                  style={{ flex: 1, fontSize: 13 }}
+                                  onClick={() => handleBuyMore(h)}
+                                  disabled={buyMoreSaving}
+                                >
+                                  {buyMoreSaving ? '...' : '✓ Konfirmasi Beli'}
+                                </button>
+                                <button className="btn btn-ghost" style={{ padding: '8px 10px', fontSize: 13 }} onClick={() => setBuyMoreId(null)}>✕</button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </td>
                     </tr>
                   )
