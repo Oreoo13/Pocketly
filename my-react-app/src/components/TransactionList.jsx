@@ -5,7 +5,7 @@ const formatter = new Intl.NumberFormat('id-ID', {
   style: 'currency', currency: 'IDR', minimumFractionDigits: 0,
 })
 
-export default function TransactionList({ transactions, categories, accounts = [], onRefresh, onEdit }) {
+export default function TransactionList({ transactions, categories, accounts = [], cashInvestments = [], onRefresh, onEdit }) {
   const [deleting, setDeleting] = useState(null)
   const [filter, setFilter] = useState('all')
   const [monthFilter, setMonthFilter] = useState('')
@@ -13,6 +13,22 @@ export default function TransactionList({ transactions, categories, accounts = [
   const handleDelete = async (id) => {
     if (!confirm('Hapus transaksi ini?')) return
     setDeleting(id)
+    
+    // Auto-sync reversal for linked investments
+    const tx = transactions.find(t => t.id === id)
+    if (tx) {
+      const cat = categories.find(c => c.id === tx.category_id)
+      if (cat?.linked_investment_id) {
+        const inv = cashInvestments.find(i => i.id === cat.linked_investment_id)
+        if (inv) {
+          const delta = tx.type === 'expense' ? Number(tx.amount) : -Number(tx.amount)
+          await supabase.from('cash_investments')
+            .update({ principal: Math.max(0, Number(inv.principal) - delta) })
+            .eq('id', inv.id)
+        }
+      }
+    }
+
     await supabase.from('transactions').delete().eq('id', id)
     setDeleting(null)
     onRefresh?.()

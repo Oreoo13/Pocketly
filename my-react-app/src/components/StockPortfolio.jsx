@@ -16,13 +16,13 @@ const TICKER_COLORS = {
   DEFAULT: '#6366f1',
 }
 
-export default function StockPortfolio({ holdings, onRefresh, user }) {
+export default function StockPortfolio({ holdings, cashInvestments = [], onRefresh, user }) {
   const [manualPrices, setManualPrices] = useState(loadPrices)
   const [editingTicker, setEditingTicker] = useState(null)
   const [priceInput, setPriceInput] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [editId, setEditId] = useState(null)
-  const [form, setForm] = useState({ ticker: '', name: '', lots: '', avg_price: '' })
+  const [form, setForm] = useState({ ticker: '', name: '', lots: '', avg_price: '', source_rdn_id: '' })
   const [saving, setSaving] = useState(false)
   const [formError, setFormError] = useState('')
 
@@ -31,6 +31,14 @@ export default function StockPortfolio({ holdings, onRefresh, user }) {
   const [buyMoreLots, setBuyMoreLots] = useState('')
   const [buyMorePrice, setBuyMorePrice] = useState('')
   const [buyMoreSaving, setBuyMoreSaving] = useState(false)
+  const [buySourceRdnId, setBuySourceRdnId] = useState('')
+
+  // Sell state
+  const [sellId, setSellId] = useState(null)
+  const [sellLots, setSellLots] = useState('')
+  const [sellPrice, setSellPrice] = useState('')
+  const [sellTargetRdnId, setSellTargetRdnId] = useState('')
+  const [sellSaving, setSellSaving] = useState(false)
 
   const { prices: autoPrices, loading: autoLoading, error: autoError, fetchPrices } = useStockPrices()
   const tickers = holdings.map(h => h.ticker)
@@ -69,11 +77,22 @@ export default function StockPortfolio({ holdings, onRefresh, user }) {
     } else {
       const res = await supabase.from('stock_holdings').insert(payload)
       error = res.error
+
+      if (!error && form.source_rdn_id) {
+        // Deduct from RDN
+        const rdn = cashInvestments.find(r => r.id === form.source_rdn_id)
+        if (rdn) {
+          const totalCost = payload.lots * payload.avg_price * 100
+          await supabase.from('cash_investments')
+            .update({ principal: Number(rdn.principal) - totalCost })
+            .eq('id', rdn.id)
+        }
+      }
     }
 
     setSaving(false)
     if (error) { setFormError(error.message); return }
-    setForm({ ticker: '', name: '', lots: '', avg_price: '' })
+    setForm({ ticker: '', name: '', lots: '', avg_price: '', source_rdn_id: '' })
     setShowForm(false)
     setEditId(null)
     onRefresh?.()
@@ -116,10 +135,55 @@ export default function StockPortfolio({ holdings, onRefresh, user }) {
       avg_price: newAvg,
     }).eq('id', holding.id)
 
+    if (buySourceRdnId) {
+      const rdn = cashInvestments.find(r => r.id === buySourceRdnId)
+      if (rdn) {
+        const totalCost = addLots * addPrice * 100
+        await supabase.from('cash_investments')
+          .update({ principal: Number(rdn.principal) - totalCost })
+          .eq('id', rdn.id)
+      }
+    }
+
     setBuyMoreSaving(false)
     setBuyMoreId(null)
     setBuyMoreLots('')
     setBuyMorePrice('')
+    setBuySourceRdnId('')
+    onRefresh?.()
+  }
+
+  const handleSell = async (holding) => {
+    const sLots = parseInt(sellLots)
+    const sPrice = parseNum(sellPrice)
+    if (!sLots || sLots <= 0 || sLots > holding.lots || !sPrice || sPrice <= 0) return
+
+    setSellSaving(true)
+    const newLots = holding.lots - sLots
+
+    if (newLots === 0) {
+      await supabase.from('stock_holdings').delete().eq('id', holding.id)
+    } else {
+      await supabase.from('stock_holdings').update({
+        lots: newLots,
+      }).eq('id', holding.id)
+    }
+
+    if (sellTargetRdnId) {
+      const rdn = cashInvestments.find(r => r.id === sellTargetRdnId)
+      if (rdn) {
+        const totalProceeds = sLots * sPrice * 100
+        await supabase.from('cash_investments')
+          .update({ principal: Number(rdn.principal) + totalProceeds })
+          .eq('id', rdn.id)
+      }
+    }
+
+    setSellSaving(false)
+    setSellId(null)
+    setSellLots('')
+    setSellPrice('')
+    setSellTargetRdnId('')
     onRefresh?.()
   }
 
@@ -186,6 +250,15 @@ export default function StockPortfolio({ holdings, onRefresh, user }) {
               <label>Avg Price (Rp/lembar)</label>
               <input type="text" inputMode="numeric" placeholder="4.200" value={form.avg_price}
                 onChange={e => setForm(p => ({ ...p, avg_price: fmtNum(e.target.value) }))} />
+            </div>
+            <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+              <label>Pilih RDN Wallet (Potong Saldo Otomatis)</label>
+              <select value={form.source_rdn_id || ''} onChange={e => setForm(p => ({ ...p, source_rdn_id: e.target.value }))}>
+                <option value="">-- Lewati (Jangan Potong RDN) --</option>
+                {cashInvestments.filter(i => i.type === 'rdn').map(i => (
+                  <option key={i.id} value={i.id}>{i.name} (Saldo saat ini: {fmt.format(i.principal)})</option>
+                ))}
+              </select>
             </div>
           </div>
           {formError && <p className="form-error">{formError}</p>}
@@ -321,10 +394,18 @@ export default function StockPortfolio({ holdings, onRefresh, user }) {
                           <button
                             className="btn btn-ghost"
                             style={{ padding: '3px 8px', fontSize: 12, background: 'rgba(34,197,94,0.15)', color: 'var(--income)', border: '1px solid rgba(34,197,94,0.3)' }}
-                            onClick={() => { setBuyMoreId(buyMoreId === h.id ? null : h.id); setBuyMoreLots(''); setBuyMorePrice('') }}
+                            onClick={() => { setBuyMoreId(buyMoreId === h.id ? null : h.id); setBuyMoreLots(''); setBuyMorePrice(''); setSellId(null) }}
                             title="Tambah Lot (Beli Lagi)"
                           >
                             + Lot
+                          </button>
+                          <button
+                            className="btn btn-ghost"
+                            style={{ padding: '3px 8px', fontSize: 12, background: 'rgba(244,63,94,0.15)', color: '#f43f5e', border: '1px solid rgba(244,63,94,0.3)' }}
+                            onClick={() => { setSellId(sellId === h.id ? null : h.id); setSellLots(''); setSellPrice(currentPrice ? fmtNum(String(currentPrice)) : ''); setBuyMoreId(null) }}
+                            title="Jual Lot"
+                          >
+                            - Jual
                           </button>
                           <button className="btn btn-danger" style={{ padding: '3px 8px', fontSize: 11 }} onClick={() => handleDelete(h.id)}>🗑️</button>
                         </div>
@@ -373,6 +454,19 @@ export default function StockPortfolio({ holdings, onRefresh, user }) {
                                   </div>
                                 )
                               })()}
+                              <div>
+                                <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 3 }}>Potong Saldo RDN</label>
+                                <select 
+                                  value={buySourceRdnId} 
+                                  onChange={e => setBuySourceRdnId(e.target.value)}
+                                  style={{ width: '100%', padding: '8px 10px', fontSize: 13, background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text-primary)' }}
+                                >
+                                  <option value="">-- Lewati (Jangan Potong RDN) --</option>
+                                  {cashInvestments.filter(i => i.type === 'rdn').map(i => (
+                                    <option key={i.id} value={i.id}>{i.name} ({fmt.format(i.principal)})</option>
+                                  ))}
+                                </select>
+                              </div>
                               <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
                                 <button
                                   className="btn btn-primary"
@@ -383,6 +477,77 @@ export default function StockPortfolio({ holdings, onRefresh, user }) {
                                   {buyMoreSaving ? '...' : '✓ Konfirmasi Beli'}
                                 </button>
                                 <button className="btn btn-ghost" style={{ padding: '8px 10px', fontSize: 13 }} onClick={() => setBuyMoreId(null)}>✕</button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Sell inline form */}
+                        {sellId === h.id && (
+                          <div style={{ marginTop: 10, padding: '12px', background: 'rgba(244,63,94,0.07)', border: '1.5px solid rgba(244,63,94,0.3)', borderRadius: 10, minWidth: 220 }}>
+                            <div style={{ fontSize: 12, fontWeight: 700, color: '#f43f5e', marginBottom: 8 }}>📉 Jual Lot {h.ticker}</div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                              <div>
+                                <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 3 }}>Jumlah Lot Jual (Max: {h.lots})</label>
+                                <input
+                                  type="text"
+                                  inputMode="numeric"
+                                  pattern="[0-9]*"
+                                  placeholder="1"
+                                  value={sellLots}
+                                  onChange={e => setSellLots(e.target.value.replace(/\D/g, ''))}
+                                  autoFocus
+                                  style={{ width: '100%', padding: '8px 10px', fontSize: 14, fontWeight: 700, background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text-primary)', boxSizing: 'border-box' }}
+                                />
+                              </div>
+                              <div>
+                                <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 3 }}>Harga Jual (Rp/lembar)</label>
+                                <input
+                                  type="text"
+                                  inputMode="numeric"
+                                  pattern="[0-9]*"
+                                  placeholder="4.000"
+                                  value={fmtNum(sellPrice)}
+                                  onChange={e => setSellPrice(e.target.value.replace(/\D/g, ''))}
+                                  onKeyDown={e => { if (e.key === 'Enter') handleSell(h); if (e.key === 'Escape') setSellId(null) }}
+                                  style={{ width: '100%', padding: '8px 10px', fontSize: 14, fontWeight: 700, background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text-primary)', boxSizing: 'border-box' }}
+                                />
+                              </div>
+                              {/* Preview Proceeds */}
+                              {sellLots && sellPrice && parseInt(sellLots) > 0 && parseNum(sellPrice) > 0 && (() => {
+                                const proceeds = parseInt(sellLots) * 100 * parseNum(sellPrice)
+                                const cogs = parseInt(sellLots) * 100 * h.avg_price
+                                const pnl = proceeds - cogs
+                                return (
+                                  <div style={{ padding: '8px 10px', background: 'rgba(244,63,94,0.1)', borderRadius: 8, fontSize: 12 }}>
+                                    <div style={{ color: 'var(--text-muted)' }}>Hasil Jual: <strong style={{ color: 'var(--text-primary)' }}>{fmt.format(proceeds)}</strong></div>
+                                    <div style={{ color: 'var(--text-muted)' }}>Realized P/L: <strong style={{ color: pnl >= 0 ? 'var(--income)' : '#f43f5e' }}>{pnl >= 0 ? '+' : ''}{fmt.format(pnl)}</strong></div>
+                                  </div>
+                                )
+                              })()}
+                              <div>
+                                <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 3 }}>Uang Penjualan Masuk Ke</label>
+                                <select 
+                                  value={sellTargetRdnId} 
+                                  onChange={e => setSellTargetRdnId(e.target.value)}
+                                  style={{ width: '100%', padding: '8px 10px', fontSize: 13, background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text-primary)' }}
+                                >
+                                  <option value="">-- Lewati (Jangan Tambah RDN) --</option>
+                                  {cashInvestments.filter(i => i.type === 'rdn').map(i => (
+                                    <option key={i.id} value={i.id}>{i.name} ({fmt.format(i.principal)})</option>
+                                  ))}
+                                </select>
+                              </div>
+                              <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
+                                <button
+                                  className="btn btn-danger"
+                                  style={{ flex: 1, fontSize: 13, background: '#f43f5e', color: 'white' }}
+                                  onClick={() => handleSell(h)}
+                                  disabled={sellSaving || parseInt(sellLots) > h.lots}
+                                >
+                                  {sellSaving ? '...' : '✓ Konfirmasi Jual'}
+                                </button>
+                                <button className="btn btn-ghost" style={{ padding: '8px 10px', fontSize: 13 }} onClick={() => setSellId(null)}>✕</button>
                               </div>
                             </div>
                           </div>

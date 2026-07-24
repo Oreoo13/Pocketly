@@ -216,11 +216,13 @@ export default function Analytics({ transactions = [], categories = [], stockHol
               })),
               // Individual cash products by name
               ...cashInvestments.map(inv => {
-                const icon = inv.type === 'rdpu' ? '🏦'
+                const icon = inv.type === 'rdn' ? '💼'
+                  : inv.type === 'rdpu' ? '🏦'
                   : inv.type === 'deposito' ? '💎'
                   : inv.type === 'bank_digital' ? '📱'
                   : inv.type === 'obligasi' ? '📜' : '💰'
-                const typeLabel = inv.type === 'rdpu' ? 'RDPU'
+                const typeLabel = inv.type === 'rdn' ? 'RDN Wallet'
+                  : inv.type === 'rdpu' ? 'RDPU'
                   : inv.type === 'deposito' ? 'Deposito'
                   : inv.type === 'bank_digital' ? 'Bank Digital'
                   : inv.type === 'obligasi' ? 'Obligasi' : 'Cash'
@@ -336,7 +338,7 @@ export default function Analytics({ transactions = [], categories = [], stockHol
             <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
               <StockWatchlist />
               <div style={{ borderTop: '1px solid var(--border)', paddingTop: 28 }}>
-                <StockPortfolio holdings={stockHoldings} onRefresh={onRefresh} user={user} />
+                <StockPortfolio holdings={stockHoldings} cashInvestments={cashInvestments.filter(i => i.type === 'rdn')} onRefresh={onRefresh} user={user} />
               </div>
             </div>
           ) : (

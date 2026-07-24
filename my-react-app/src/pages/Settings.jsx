@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { supabase } from '../utils/supabase'
 
-export default function Settings({ categories = [], accounts = [], onRefresh, user }) {
+export default function Settings({ categories = [], accounts = [], cashInvestments = [], onRefresh, user }) {
   const [activeTab, setActiveTab] = useState('categories') // 'categories' | 'accounts'
 
   // Category State
@@ -54,6 +54,14 @@ export default function Settings({ categories = [], accounts = [], onRefresh, us
   const handleDeleteCat = async (id) => {
     if (!confirm("Hapus kategori ini? Data transaksi yang menggunakan kategori ini mungkin akan bermasalah.")) return
     await supabase.from('categories').delete().eq('id', id)
+    onRefresh?.()
+  }
+
+  const handleLinkInvestment = async (categoryId, investmentId) => {
+    // investmentId = null means unlink
+    await supabase.from('categories')
+      .update({ linked_investment_id: investmentId || null })
+      .eq('id', categoryId)
     onRefresh?.()
   }
 
@@ -186,41 +194,141 @@ export default function Settings({ categories = [], accounts = [], onRefresh, us
                 <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--expense)' }}></span> 
                 PENGELUARAN
               </h4>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: 12 }}>
-                {categories.filter(c => c.type === 'expense').map(c => (
-                  <div key={c.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 12, background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', borderLeft: `4px solid ${c.color || 'var(--border)'}` }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                      <span style={{ fontSize: 20 }}>{c.icon}</span>
-                      <div style={{ fontWeight: 600 }}>{c.name}</div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12 }}>
+                {categories.filter(c => c.type === 'expense').map(c => {
+                  const linkedInv = cashInvestments.find(i => i.id === c.linked_investment_id)
+                  const isLinked = !!c.linked_investment_id
+                  return (
+                  <div key={c.id} style={{ background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', borderLeft: `4px solid ${c.color || 'var(--border)'}`, overflow: 'hidden' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 12 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <span style={{ fontSize: 20 }}>{c.icon}</span>
+                        <div>
+                          <div style={{ fontWeight: 600 }}>{c.name}</div>
+                          {linkedInv && (
+                            <div style={{ fontSize: 11, color: '#10b981', marginTop: 2 }}>🔗 {linkedInv.name}</div>
+                          )}
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                        <button type="button" onClick={() => handleEditCat(c)} style={{ padding: 6, background: 'transparent', border: 'none', cursor: 'pointer', fontSize: 14 }}>✏️</button>
+                        <button type="button" onClick={() => handleDeleteCat(c.id)} style={{ padding: 6, background: 'transparent', border: 'none', cursor: 'pointer', fontSize: 14 }}>🗑️</button>
+                      </div>
                     </div>
-                    <div style={{ display: 'flex', gap: 4 }}>
-                      <button type="button" onClick={() => handleEditCat(c)} style={{ padding: 6, background: 'transparent', border: 'none', cursor: 'pointer', fontSize: 14 }}>✏️</button>
-                      <button type="button" onClick={() => handleDeleteCat(c.id)} style={{ padding: 6, background: 'transparent', border: 'none', cursor: 'pointer', fontSize: 14 }}>🗑️</button>
+                    {/* Investment Link Row */}
+                    <div style={{ padding: '8px 12px 12px', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 12, color: 'var(--text-muted)', flexShrink: 0 }}>
+                        <div
+                          onClick={() => handleLinkInvestment(c.id, isLinked ? null : (cashInvestments[0]?.id || null))}
+                          style={{
+                            width: 32, height: 18, borderRadius: 99, cursor: 'pointer',
+                            background: isLinked ? '#10b981' : 'rgba(255,255,255,0.1)',
+                            position: 'relative', transition: 'background 0.2s', flexShrink: 0
+                          }}
+                        >
+                          <div style={{
+                            width: 14, height: 14, borderRadius: '50%', background: '#fff',
+                            position: 'absolute', top: 2,
+                            left: isLinked ? 16 : 2,
+                            transition: 'left 0.2s'
+                          }} />
+                        </div>
+                        <span style={{ color: isLinked ? '#10b981' : 'var(--text-muted)', fontWeight: isLinked ? 600 : 400 }}>
+                          {isLinked ? 'Terhubung' : 'Hubungkan'}
+                        </span>
+                      </label>
+                      {isLinked && cashInvestments.length > 0 && (
+                        <select
+                          value={c.linked_investment_id || ''}
+                          onChange={e => handleLinkInvestment(c.id, e.target.value || null)}
+                          style={{ flex: 1, padding: '4px 8px', fontSize: 12, background: 'var(--bg-primary)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: 6, color: '#10b981' }}
+                        >
+                          {cashInvestments.map(inv => (
+                            <option key={inv.id} value={inv.id}>
+                              {inv.type === 'rdn' ? '💼' : inv.type === 'rdpu' ? '🏦' : inv.type === 'deposito' ? '💎' : inv.type === 'bank_digital' ? '📱' : '📜'} {inv.name}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                      {isLinked && cashInvestments.length === 0 && (
+                        <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Belum ada investasi. Tambah di tab Investasi dulu.</span>
+                      )}
                     </div>
                   </div>
-                ))}
+                  )
+                })}
                 {categories.filter(c => c.type === 'expense').length === 0 && <div className="empty-state" style={{ padding: 12, fontSize: 13 }}>Belum ada kategori pengeluaran</div>}
               </div>
             </div>
 
-            <div>
+            <div style={{ marginBottom: 24 }}>
               <h4 style={{ fontSize: 13, color: 'var(--income)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--income)' }}></span> 
                 PEMASUKAN
               </h4>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: 12 }}>
-                {categories.filter(c => c.type === 'income').map(c => (
-                  <div key={c.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 12, background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', borderLeft: `4px solid ${c.color || 'var(--border)'}` }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                      <span style={{ fontSize: 20 }}>{c.icon}</span>
-                      <div style={{ fontWeight: 600 }}>{c.name}</div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12 }}>
+                {categories.filter(c => c.type === 'income').map(c => {
+                  const linkedInv = cashInvestments.find(i => i.id === c.linked_investment_id)
+                  const isLinked = !!c.linked_investment_id
+                  return (
+                  <div key={c.id} style={{ background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', borderLeft: `4px solid ${c.color || 'var(--border)'}`, overflow: 'hidden' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 12 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <span style={{ fontSize: 20 }}>{c.icon}</span>
+                        <div>
+                          <div style={{ fontWeight: 600 }}>{c.name}</div>
+                          {linkedInv && (
+                            <div style={{ fontSize: 11, color: '#10b981', marginTop: 2 }}>🔗 {linkedInv.name}</div>
+                          )}
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                        <button type="button" onClick={() => handleEditCat(c)} style={{ padding: 6, background: 'transparent', border: 'none', cursor: 'pointer', fontSize: 14 }}>✏️</button>
+                        <button type="button" onClick={() => handleDeleteCat(c.id)} style={{ padding: 6, background: 'transparent', border: 'none', cursor: 'pointer', fontSize: 14 }}>🗑️</button>
+                      </div>
                     </div>
-                    <div style={{ display: 'flex', gap: 4 }}>
-                      <button type="button" onClick={() => handleEditCat(c)} style={{ padding: 6, background: 'transparent', border: 'none', cursor: 'pointer', fontSize: 14 }}>✏️</button>
-                      <button type="button" onClick={() => handleDeleteCat(c.id)} style={{ padding: 6, background: 'transparent', border: 'none', cursor: 'pointer', fontSize: 14 }}>🗑️</button>
+                    {/* Investment Link Row */}
+                    <div style={{ padding: '8px 12px 12px', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 12, color: 'var(--text-muted)', flexShrink: 0 }}>
+                        <div
+                          onClick={() => handleLinkInvestment(c.id, isLinked ? null : (cashInvestments[0]?.id || null))}
+                          style={{
+                            width: 32, height: 18, borderRadius: 99, cursor: 'pointer',
+                            background: isLinked ? '#10b981' : 'rgba(255,255,255,0.1)',
+                            position: 'relative', transition: 'background 0.2s', flexShrink: 0
+                          }}
+                        >
+                          <div style={{
+                            width: 14, height: 14, borderRadius: '50%', background: '#fff',
+                            position: 'absolute', top: 2,
+                            left: isLinked ? 16 : 2,
+                            transition: 'left 0.2s'
+                          }} />
+                        </div>
+                        <span style={{ color: isLinked ? '#10b981' : 'var(--text-muted)', fontWeight: isLinked ? 600 : 400 }}>
+                          {isLinked ? 'Terhubung' : 'Hubungkan'}
+                        </span>
+                      </label>
+                      {isLinked && cashInvestments.length > 0 && (
+                        <select
+                          value={c.linked_investment_id || ''}
+                          onChange={e => handleLinkInvestment(c.id, e.target.value || null)}
+                          style={{ flex: 1, padding: '4px 8px', fontSize: 12, background: 'var(--bg-primary)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: 6, color: '#10b981' }}
+                        >
+                          {cashInvestments.map(inv => (
+                            <option key={inv.id} value={inv.id}>
+                              {inv.type === 'rdn' ? '💼' : inv.type === 'rdpu' ? '🏦' : inv.type === 'deposito' ? '💎' : inv.type === 'bank_digital' ? '📱' : '📜'} {inv.name}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                      {isLinked && cashInvestments.length === 0 && (
+                        <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Belum ada investasi. Tambah di tab Investasi dulu.</span>
+                      )}
                     </div>
                   </div>
-                ))}
+                  )
+                })}
                 {categories.filter(c => c.type === 'income').length === 0 && <div className="empty-state" style={{ padding: 12, fontSize: 13 }}>Belum ada kategori pemasukan</div>}
               </div>
             </div>

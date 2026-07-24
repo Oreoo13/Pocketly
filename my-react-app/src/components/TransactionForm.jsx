@@ -8,7 +8,7 @@ const formatNumber = (val) => {
 
 const parseNumber = (val) => parseFloat(String(val).replace(/\./g, '')) || 0
 
-export default function TransactionForm({ categories, accounts = [], onSuccess, editTx, onCancelEdit, user }) {
+export default function TransactionForm({ categories, accounts = [], cashInvestments = [], onSuccess, editTx, onCancelEdit, user }) {
   const [form, setForm] = useState({
     type: 'expense',
     amount: '',
@@ -92,7 +92,62 @@ export default function TransactionForm({ categories, accounts = [], onSuccess, 
     }
 
     setLoading(false)
-    if (err) { setError(err.message); return }
+    if (err) {
+      setError('Gagal menyimpan transaksi. Periksa koneksi internet Anda.')
+      return
+    }
+
+    // Auto-sync investment principal if category is linked
+    if (form.category_id) {
+      const cat = categories.find(c => c.id === form.category_id)
+      if (cat?.linked_investment_id) {
+        const inv = cashInvestments.find(i => i.id === cat.linked_investment_id)
+        if (inv) {
+          const newAmount = parseNumber(form.amount)
+          // Expense adds to investment, Income subtracts from investment
+          const newDelta = form.type === 'expense' ? newAmount : -newAmount
+          let totalDelta = newDelta
+
+          // If editing, reverse the old amount first
+          if (editTx) {
+            const oldCat = categories.find(c => c.id === editTx.category_id)
+            const oldAmountNum = Number(editTx.amount)
+            const oldDelta = editTx.type === 'expense' ? oldAmountNum : -oldAmountNum
+            
+            if (oldCat?.linked_investment_id === cat.linked_investment_id) {
+              totalDelta = newDelta - oldDelta
+            } else {
+              // Old category was linked to a different investment — reverse old
+              if (oldCat?.linked_investment_id) {
+                const oldInv = cashInvestments.find(i => i.id === oldCat.linked_investment_id)
+                if (oldInv) {
+                  await supabase.from('cash_investments')
+                    .update({ principal: Math.max(0, Number(oldInv.principal) - oldDelta) })
+                    .eq('id', oldInv.id)
+                }
+              }
+            }
+          }
+          const updatedPrincipal = Math.max(0, Number(inv.principal) + totalDelta)
+          await supabase.from('cash_investments')
+            .update({ principal: updatedPrincipal })
+            .eq('id', inv.id)
+        }
+      } else if (editTx) {
+        // New category has no link, but old one might — reverse old
+        const oldCat = categories.find(c => c.id === editTx.category_id)
+        if (oldCat?.linked_investment_id) {
+          const oldInv = cashInvestments.find(i => i.id === oldCat.linked_investment_id)
+          if (oldInv) {
+            const oldAmountNum = Number(editTx.amount)
+            const oldDelta = editTx.type === 'expense' ? oldAmountNum : -oldAmountNum
+            await supabase.from('cash_investments')
+              .update({ principal: Math.max(0, Number(oldInv.principal) - oldDelta) })
+              .eq('id', oldInv.id)
+          }
+        }
+      }
+    }
 
     setForm({
       type: 'expense',
@@ -171,6 +226,26 @@ export default function TransactionForm({ categories, accounts = [], onSuccess, 
             <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
           ))}
         </select>
+        {/* Investment link indicator */}
+        {(() => {
+          const cat = categories.find(c => c.id === form.category_id)
+          const inv = cat?.linked_investment_id ? cashInvestments.find(i => i.id === cat.linked_investment_id) : null
+          if (!inv) return null
+          
+          if (form.type === 'expense') {
+            return (
+              <div style={{ marginTop: 8, padding: '10px 12px', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)', borderRadius: 8, fontSize: 13, color: '#6ee7b7', lineHeight: 1.4 }}>
+                💼 Pengeluaran ini akan otomatis <strong>menambah</strong> saldo <strong style={{ color: '#10b981' }}>{inv.name}</strong>
+              </div>
+            )
+          } else {
+            return (
+              <div style={{ marginTop: 8, padding: '10px 12px', background: 'rgba(244,63,94,0.08)', border: '1px solid rgba(244,63,94,0.25)', borderRadius: 8, fontSize: 13, color: '#fda4af', lineHeight: 1.4 }}>
+                💸 Pemasukan ini akan otomatis <strong>mengurangi</strong> saldo <strong style={{ color: '#f43f5e' }}>{inv.name}</strong> (Refund/Withdraw)
+              </div>
+            )
+          }
+        })()}
       </div>
 
       <div className="form-group">

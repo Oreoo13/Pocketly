@@ -120,6 +120,7 @@ function AppInner() {
               transactions={transactions}
               categories={categories}
               accounts={accounts}
+              cashInvestments={cashInvestments}
               onRefresh={fetchAll}
               user={user}
             />
@@ -141,7 +142,8 @@ function AppInner() {
           <Route path="/settings" element={
             <Settings 
               categories={categories} 
-              accounts={accounts} 
+              accounts={accounts}
+              cashInvestments={cashInvestments}
               onRefresh={fetchAll} 
               user={user} 
             />

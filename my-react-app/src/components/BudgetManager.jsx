@@ -41,18 +41,26 @@ export default function BudgetManager({ categories, transactions, accounts = [],
     const targetCat = categories.find(c => c.id === categoryId)
     if (!targetCat) return []
 
-    return transactions
-      .filter(t => {
-        const d = new Date(t.date)
-        const tCat = categories.find(c => c.id === t.category_id)
-        if (!tCat) return false
-        const tName = tCat.name.toLowerCase()
-        const targetName = targetCat.name.toLowerCase()
-        const isMatch = tName === targetName || (tName.includes('investasi') && targetName.includes('investasi'))
-        return isMatch &&
-          d.getMonth() === now.getMonth() &&
-          d.getFullYear() === now.getFullYear()
-      })
+    return transactions.filter(t => {
+      const d = new Date(t.date)
+      if (d.getMonth() !== now.getMonth() || d.getFullYear() !== now.getFullYear()) return false
+
+      const tCat = categories.find(c => c.id === t.category_id)
+      if (!tCat) return false
+
+      // Match exact category
+      if (tCat.id === targetCat.id) return true
+
+      // Match if both are linked to the same investment
+      if (targetCat.linked_investment_id && tCat.linked_investment_id === targetCat.linked_investment_id) return true
+
+      // Legacy string match
+      const tName = tCat.name.toLowerCase()
+      const targetName = targetCat.name.toLowerCase()
+      if (tName === targetName || (tName.includes('investasi') && targetName.includes('investasi'))) return true
+
+      return false
+    })
   }
 
   const getSpent = (categoryId) => {

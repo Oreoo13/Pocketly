@@ -3,7 +3,7 @@ import TransactionList from '../components/TransactionList'
 import ExportButton from '../components/ExportButton'
 import { useState } from 'react'
 
-export default function Transactions({ transactions, categories, accounts, onRefresh, user }) {
+export default function Transactions({ transactions, categories, accounts, cashInvestments = [], onRefresh, user }) {
   const [editTx, setEditTx] = useState(null)
 
   return (
@@ -21,6 +21,7 @@ export default function Transactions({ transactions, categories, accounts, onRef
           <TransactionForm 
             categories={categories} 
             accounts={accounts}
+            cashInvestments={cashInvestments}
             onSuccess={() => { onRefresh(); setEditTx(null); }} 
             editTx={editTx}
             onCancelEdit={() => setEditTx(null)}
@@ -32,6 +33,7 @@ export default function Transactions({ transactions, categories, accounts, onRef
             transactions={transactions}
             categories={categories}
             accounts={accounts}
+            cashInvestments={cashInvestments}
             onRefresh={onRefresh}
             onEdit={(tx) => setEditTx(tx)}
           />
